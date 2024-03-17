@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Entity(name = "users")
 @Table(name = "users")
 @NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class User {
     @Id
