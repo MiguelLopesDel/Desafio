@@ -1,8 +1,9 @@
 package com.gamerytoffi.picpay.repository;
 
-import com.gamerytoffi.picpay.domain.User;
-import com.gamerytoffi.picpay.domain.UserType;
-import com.gamerytoffi.picpay.domain.dto.UserDTO;
+import com.gamerytoffi.picpay.domain.user.User;
+import com.gamerytoffi.picpay.domain.user.UserRepository;
+import com.gamerytoffi.picpay.domain.user.UserType;
+import com.gamerytoffi.picpay.domain.user.UserDTO;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
