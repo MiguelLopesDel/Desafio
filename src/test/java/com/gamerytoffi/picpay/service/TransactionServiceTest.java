@@ -1,10 +1,11 @@
 package com.gamerytoffi.picpay.service;
 
-import com.gamerytoffi.picpay.domain.User;
-import com.gamerytoffi.picpay.domain.UserType;
-import com.gamerytoffi.picpay.domain.dto.TransactionDTO;
-import com.gamerytoffi.picpay.infra.exception.TransactionNotAuthorizeException;
-import com.gamerytoffi.picpay.repository.TransactionRepository;
+import com.gamerytoffi.picpay.domain.authorization.AuthorizationService;
+import com.gamerytoffi.picpay.domain.notification.NotificationService;
+import com.gamerytoffi.picpay.domain.transaction.*;
+import com.gamerytoffi.picpay.domain.user.User;
+import com.gamerytoffi.picpay.domain.user.UserService;
+import com.gamerytoffi.picpay.domain.user.UserType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,19 +44,18 @@ class TransactionServiceTest {
     void createTransactionCase1() throws Exception {
         User sender = new User(1L, "test", "Silva", "32434343", "Elenaa@example.com", "senha123", BigDecimal.TEN, UserType.COMMON);
         User receiver = new User(2L, "test", "Silva", "32434343", "Elenaa@example.com", "senha123", BigDecimal.TEN, UserType.MERCHANT);
-        when(userService.findUserById(1L)).thenReturn(sender);
-        when(userService.findUserById(2L)).thenReturn(receiver);
-
-        when(authorizationService.authorizeTransaction()).thenReturn(true);
+        when(userService.getUserById(1L)).thenReturn(sender);
+        when(userService.getUserById(2L)).thenReturn(receiver);
+        doNothing().when(authorizationService).authorizeTransaction();
         TransactionDTO transactionDTO = new TransactionDTO(BigDecimal.TEN, 1L, 2L);
-        transactionService.createTransaction(transactionDTO);
+        Transaction transaction = transactionService.create(transactionDTO);
         verify(transactionRepository, times(1)).save(any());
         sender.setBalance(BigDecimal.ZERO);
         verify(userService, times(1)).saveUser(sender);
         receiver.setBalance(BigDecimal.valueOf(20));
         verify(userService, times(1)).saveUser(receiver);
-        verify(notificationService, times(1)).sendNotification(sender, "successul transaction");
-        verify(notificationService, times(1)).sendNotification(receiver, "received transaction");
+        verify(notificationService, times(1)).notify(transaction);
+        verify(notificationService, times(1)).notify(transaction);
     }
 
     @Test
@@ -63,13 +63,12 @@ class TransactionServiceTest {
     void createTransactionCase2() throws Exception {
         User sender = new User(1L, "test", "Silva", "32434343", "Elenaa@example.com", "senha123", BigDecimal.TEN, UserType.COMMON);
         User receiver = new User(2L, "test", "Silva", "32434343", "Elenaa@example.com", "senha123", BigDecimal.TEN, UserType.MERCHANT);
-        when(userService.findUserById(1L)).thenReturn(sender);
-        when(userService.findUserById(2L)).thenReturn(receiver);
-        when(authorizationService.authorizeTransaction()).thenReturn(false);
-
+        when(userService.getUserById(1L)).thenReturn(sender);
+        when(userService.getUserById(2L)).thenReturn(receiver);
+        doThrow(new TransactionNotAuthorizeException("Transaction not authorized")).when(authorizationService).authorizeTransaction();
         Exception thrown = Assertions.assertThrows(TransactionNotAuthorizeException.class, () -> {
             TransactionDTO transactionDTO = new TransactionDTO(BigDecimal.TEN, 1L, 2L);
-            transactionService.createTransaction(transactionDTO);
+            transactionService.create(transactionDTO);
         });
 
         Assertions.assertEquals("Transaction not authorized", thrown.getMessage());
